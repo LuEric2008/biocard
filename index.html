@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>试卷批阅</title>
+    <title>考试批阅</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -393,6 +393,13 @@
             cursor: not-allowed;
         }
         
+        /* 空格选项样式 - 蓝色 */
+        .option-btn.correct-space {
+            background-color: #2196F3;
+            color: white;
+            border-color: #2196F3;
+        }
+        
         /* 键盘输入提示 */
         .keyboard-hint {
             background-color: #FFF3CD;
@@ -670,8 +677,8 @@
     <div class="container">
         <header>
             <h1>江苏省天一中学生物竞赛答题卡系统</h1>
-            <p class="subtitle">集试卷设置、答案录入、成绩分析为一体的自动化离线批阅系统</p>
-            <p class="subtitle">©Eric Lu + Deepseek,2025</p>
+            <p class="subtitle">集试卷设置、答案录入和成绩分析为一体的自动化系统</p>
+            <p class="subtitle">©Eric Lu + Deepseek</p>
         </header>
         
         <div class="wizard">
@@ -683,7 +690,7 @@
                     </div>
                     <div class="step-item" data-step="2">
                         <span class="step-number">2</span>
-                        <span class="step-text">录入试题答案</span>
+                        <span class="step-text">录入标准答案</span>
                     </div>
                     <div class="step-item" data-step="3">
                         <span class="step-number">3</span>
@@ -691,7 +698,7 @@
                     </div>
                     <div class="step-item" data-step="4">
                         <span class="step-number">4</span>
-                        <span class="step-text">成绩分析</span>
+                        <span class="step-text">成绩统计分析</span>
                     </div>
                 </div>
                 
@@ -745,6 +752,7 @@
                     </h2>
                     <p class="step-description">
                         请设置所有题目的正确答案。每道题包含4个独立选项，每个选项都需要选择正确（T）或错误（F）。
+                        按空格键可以跳过当前选项（设置为空格），空格选项表示学生只要填涂就正确。
                     </p>
                     
                     <div class="instructions">
@@ -754,11 +762,11 @@
                         
                         <div class="keyboard-hint">
                             <i class="fas fa-keyboard"></i> 
-                            <span>键盘操作提示：按 <kbd>T</kbd> 或 <kbd>F</kbd> 键输入答案，按 <kbd>Backspace</kbd> 删除上一个答案，按 <kbd>Space</kbd> 跳过当前选项</span>
+                            <span>键盘操作提示：按 <kbd>T</kbd> 或 <kbd>F</kbd> 键输入答案，按 <kbd>Backspace</kbd> 删除上一个答案，按 <kbd>Space</kbd> 跳过当前选项（设置为空格）</span>
                         </div>
                         
                         <div class="progress-info" id="answerProgress">
-                            完成进度: 0/0
+                            总题数: 80
                         </div>
                         
                         <div class="locked-message" id="lockedMessage" style="display: none;">
@@ -852,7 +860,7 @@
                 <!-- 步骤4：成绩分析 -->
                 <div class="step-panel" id="step4">
                     <h2 class="step-title">
-                        <i class="fas fa-chart-bar"></i> 成绩分析
+                        <i class="fas fa-chart-bar"></i> 成绩统计分析
                     </h2>
                     <p class="step-description">
                         查看学生成绩统计，可以下载单个学生得分详情或整个班级的报表。
@@ -869,7 +877,7 @@
                             <i class="fas fa-arrow-left"></i> 上一步
                         </button>
                         <button class="btn btn-warning" id="downloadClassReport" disabled>
-                            下载班级总表 <i class="fas fa-download"></i>
+                            下载班级报表 <i class="fas fa-download"></i>
                         </button>
                     </div>
                     
@@ -878,7 +886,7 @@
                             <tr>
                                 <th>排名</th>
                                 <th>年级班级</th>
-                                <th>姓名</th>
+                                <th>学生姓名</th>
                                 <th>成绩</th>
                                 <th>操作</th>
                             </tr>
@@ -1135,30 +1143,52 @@
             // 显示锁定消息
             lockedMessage.style.display = 'block';
             
-            // 只显示正确答案，不显示错误答案
+            // 显示正确答案，空格选项显示为特殊样式
             for (let i = 0; i < correctAnswers.length; i++) {
                 for (let j = 0; j < 4; j++) {
                     const correctValue = correctAnswers[i][j];
-                    const correctButton = document.querySelector(`#correct-question-${i+1} .option-btn[data-option="${j}"][data-value="${correctValue}"]`);
-                    const wrongValue = correctValue === 'T' ? 'F' : 'T';
-                    const wrongButton = document.querySelector(`#correct-question-${i+1} .option-btn[data-option="${j}"][data-value="${wrongValue}"]`);
+                    const tButton = document.querySelector(`#correct-question-${i+1} .option-btn[data-option="${j}"][data-value="T"]`);
+                    const fButton = document.querySelector(`#correct-question-${i+1} .option-btn[data-option="${j}"][data-value="F"]`);
                     
-                    // 正确答案标记为绿色
-                    if (correctButton) {
-                        correctButton.classList.add('correct');
-                        correctButton.classList.remove('selected');
-                        correctButton.classList.add('locked');
-                        correctButton.style.cursor = 'not-allowed';
-                        correctButton.onclick = null;
-                    }
-                    
-                    // 错误答案标记为灰色
-                    if (wrongButton) {
-                        wrongButton.classList.add('incorrect');
-                        wrongButton.classList.remove('selected');
-                        wrongButton.classList.add('locked');
-                        wrongButton.style.cursor = 'not-allowed';
-                        wrongButton.onclick = null;
+                    if (correctValue === null) {
+                        // 空格选项：两个按钮都显示为特殊颜色（蓝色），表示任意填涂都正确
+                        if (tButton) {
+                            tButton.classList.add('correct-space');
+                            tButton.classList.remove('selected');
+                            tButton.classList.add('locked');
+                            tButton.style.cursor = 'not-allowed';
+                            tButton.onclick = null;
+                        }
+                        if (fButton) {
+                            fButton.classList.add('correct-space');
+                            fButton.classList.remove('selected');
+                            fButton.classList.add('locked');
+                            fButton.style.cursor = 'not-allowed';
+                            fButton.onclick = null;
+                        }
+                    } else {
+                        // 正常答案：正确答案显示绿色，错误答案显示灰色
+                        const correctButton = document.querySelector(`#correct-question-${i+1} .option-btn[data-option="${j}"][data-value="${correctValue}"]`);
+                        const wrongValue = correctValue === 'T' ? 'F' : 'T';
+                        const wrongButton = document.querySelector(`#correct-question-${i+1} .option-btn[data-option="${j}"][data-value="${wrongValue}"]`);
+                        
+                        // 正确答案标记为绿色
+                        if (correctButton) {
+                            correctButton.classList.add('correct');
+                            correctButton.classList.remove('selected');
+                            correctButton.classList.add('locked');
+                            correctButton.style.cursor = 'not-allowed';
+                            correctButton.onclick = null;
+                        }
+                        
+                        // 错误答案标记为灰色
+                        if (wrongButton) {
+                            wrongButton.classList.add('incorrect');
+                            wrongButton.classList.remove('selected');
+                            wrongButton.classList.add('locked');
+                            wrongButton.style.cursor = 'not-allowed';
+                            wrongButton.onclick = null;
+                        }
                     }
                 }
             }
@@ -1509,8 +1539,23 @@
             }
         }
         
-        // 跳过步骤2当前选项
+        // 跳过步骤2当前选项（设置为空格）
         function skipCurrentCorrectOption() {
+            // 将当前选项设置为null（空格）
+            correctAnswers[currentCorrectQuestion][currentCorrectOption] = null;
+            
+            // 更新UI
+            const currentQuestionEl = document.getElementById(`correct-question-${currentCorrectQuestion + 1}`);
+            if (currentQuestionEl) {
+                // 移除同选项的其他选择
+                const optionButtons = currentQuestionEl.querySelectorAll(`.option-btn[data-option="${currentCorrectOption}"]`);
+                optionButtons.forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+            }
+            
+            updateAnswerProgress();
+            updateCorrectAllQuestionsAnswered();
             findNextUnansweredCorrectOption();
         }
         
@@ -1915,12 +1960,9 @@
             updateCurrentSelection();
         }
         
-        // 更新答案录入进度
+        // 更新答案录入进度 - 修改为只显示总题数
         function updateAnswerProgress() {
-            const completed = correctAnswers.reduce((count, question) => {
-                return question.every(opt => opt !== null) ? count + 1 : count;
-            }, 0);
-            answerProgress.textContent = `完成进度: ${completed}/${examData.questionCount}`;
+            answerProgress.textContent = `总题数: ${examData.questionCount}`;
         }
         
         // 更新学生答案录入进度
@@ -1942,7 +1984,7 @@
             studentProgress.textContent = `完成进度: ${completed}/${examData.questionCount}`;
         }
         
-        // 计算每道题的得分
+        // 计算每道题的得分（新评分规则）
         function calculateQuestionScore(questionIndex, studentAnswer) {
             const userAnswers = studentAnswer;
             const correct = correctAnswers[questionIndex];
@@ -1964,8 +2006,15 @@
             
             // 计算正确数量
             for (let j = 0; j < 4; j++) {
-                if (userAnswers[j] === correct[j]) {
+                // 如果教师端输入是空格（null），学生只要填涂了（非null）就正确
+                if (correct[j] === null) {
+                    // 学生填涂了（非null）就正确
                     correctCount++;
+                } else {
+                    // 教师端有明确答案（T或F），需要匹配
+                    if (userAnswers[j] === correct[j]) {
+                        correctCount++;
+                    }
                 }
             }
             
@@ -2049,7 +2098,7 @@
             });
             
             // 更新表格标题
-            tableTitle.textContent = `${examData.id}-${examData.name} 答题统计`;
+            tableTitle.textContent = `${examData.id}-${examData.name} 答题情况`;
             
             // 启用下载班级报表按钮
             if (submittedStudents.length >= 2) {
@@ -2088,7 +2137,7 @@
                     <div class="stat-value">${minScore}</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">有效学生数</div>
+                    <div class="stat-label">学生人数</div>
                     <div class="stat-value">${submittedStudents.length}</div>
                 </div>
             `;
@@ -2384,24 +2433,15 @@
                 goToStep(1);
             });
             
-            // 步骤2：确认答案按钮
+            // 步骤2：确认答案按钮 - 修改：不再检查是否有未设置答案
             document.getElementById('confirmAnswers').addEventListener('click', function() {
-                const unanswered = correctAnswers.reduce((count, question, index) => {
-                    return question.some(opt => opt === null) ? count + 1 : count;
-                }, 0);
-                
-                if (unanswered > 0) {
-                    alert(`您还有 ${unanswered} 题未设置答案，请设置！`);
-                    return;
-                }
-                
-                if (confirm('您已设置全部答案，确定后不可修改，确定设置吗？')) {
+                if (confirm('确定要确认答案吗？确认后将无法修改。')) {
                     isCorrectAnswersLocked = true;
                     lockCorrectAnswers();
                 }
             });
             
-            // 步骤2：下一步按钮 - 修复：直接跳转，没有alert
+            // 步骤2：下一步按钮
             document.getElementById('nextToStep3').addEventListener('click', function() {
                 goToStep(3);
             });
