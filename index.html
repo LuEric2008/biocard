@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>考试批阅</title>
+    <title>教师版判断题答题卡系统</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -376,6 +376,7 @@
         
         .option-btn.locked {
             cursor: not-allowed;
+            pointer-events: none;
         }
         
         /* 正确答案样式 */
@@ -398,6 +399,24 @@
             background-color: #2196F3;
             color: white;
             border-color: #2196F3;
+        }
+        
+        /* 只读模式下的正确选项样式 */
+        .option-btn.student-correct {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+            cursor: default;
+            pointer-events: none;
+        }
+        
+        /* 只读模式下的错误选项样式 */
+        .option-btn.student-incorrect {
+            background-color: #f44336;
+            color: white;
+            border-color: #f44336;
+            cursor: default;
+            pointer-events: none;
         }
         
         /* 键盘输入提示 */
@@ -671,14 +690,31 @@
             color: #666;
             cursor: not-allowed;
         }
+        
+        /* 只读模式样式 */
+        .view-mode .form-group input, 
+        .view-mode .form-group select {
+            background-color: #f5f5f5;
+            border-color: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+        
+        .view-mode .option-btn {
+            cursor: default;
+            pointer-events: none;
+        }
+        
+        .view-mode .option-btn:hover {
+            background-color: inherit;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>江苏省天一中学生物竞赛答题卡系统</h1>
-            <p class="subtitle">集试卷设置、答案录入和成绩分析为一体的自动化系统</p>
-            <p class="subtitle">©Eric Lu + Deepseek</p>
+            <h1>教师版判断题答题卡系统</h1>
+            <p class="subtitle">通过四个简单步骤完成试卷设置、答案录入和成绩分析</p>
         </header>
         
         <div class="wizard">
@@ -690,7 +726,7 @@
                     </div>
                     <div class="step-item" data-step="2">
                         <span class="step-number">2</span>
-                        <span class="step-text">录入标准答案</span>
+                        <span class="step-text">录入试题答案</span>
                     </div>
                     <div class="step-item" data-step="3">
                         <span class="step-number">3</span>
@@ -698,16 +734,16 @@
                     </div>
                     <div class="step-item" data-step="4">
                         <span class="step-number">4</span>
-                        <span class="step-text">成绩统计分析</span>
+                        <span class="step-text">成绩分析</span>
                     </div>
                 </div>
                 
                 <div class="import-export-buttons">
                     <button class="btn btn-warning" id="importData">
-                        <i class="fas fa-file-import"></i> 导入备份
+                        <i class="fas fa-file-import"></i> 导入数据
                     </button>
                     <button class="btn btn-success" id="exportData">
-                        <i class="fas fa-file-export"></i> 导出备份
+                        <i class="fas fa-file-export"></i> 导出数据
                     </button>
                 </div>
             </div>
@@ -846,12 +882,20 @@
                         <button class="btn btn-secondary" id="backToStep2">
                             <i class="fas fa-arrow-left"></i> 上一步
                         </button>
-                        <div>
+                        <div id="studentActions">
                             <button class="btn btn-success" id="submitStudent">
                                 提交学生答案 <i class="fas fa-user-plus"></i>
                             </button>
                             <button class="btn btn-primary" id="viewResults">
                                 查看结果 <i class="fas fa-chart-bar"></i>
+                            </button>
+                        </div>
+                        <div id="viewActions" style="display: none;">
+                            <button class="btn btn-warning" id="downloadStudentDetail">
+                                下载得分详情 <i class="fas fa-download"></i>
+                            </button>
+                            <button class="btn btn-primary" id="backToResults">
+                                返回成绩分析 <i class="fas fa-arrow-left"></i>
                             </button>
                         </div>
                     </div>
@@ -860,7 +904,7 @@
                 <!-- 步骤4：成绩分析 -->
                 <div class="step-panel" id="step4">
                     <h2 class="step-title">
-                        <i class="fas fa-chart-bar"></i> 成绩统计分析
+                        <i class="fas fa-chart-bar"></i> 成绩分析
                     </h2>
                     <p class="step-description">
                         查看学生成绩统计，可以下载单个学生得分详情或整个班级的报表。
@@ -922,6 +966,7 @@
         let currentStudentIndex = -1; // 当前正在编辑的学生索引，-1表示新增
         let isCorrectAnswersLocked = false; // 标记标准答案是否已锁定
         let isStep1Locked = false; // 标记步骤1是否已锁定
+        let isViewMode = false; // 标记是否处于查看详情模式
         
         // 键盘导航相关变量
         let currentQuestion = 0;
@@ -949,6 +994,10 @@
         const lockedMessage = document.getElementById('lockedMessage');
         const confirmAnswersBtn = document.getElementById('confirmAnswers');
         const nextToStep3Btn = document.getElementById('nextToStep3');
+        const studentActions = document.getElementById('studentActions');
+        const viewActions = document.getElementById('viewActions');
+        const downloadStudentDetail = document.getElementById('downloadStudentDetail');
+        const backToResults = document.getElementById('backToResults');
         
         // 检查步骤3是否有未提交的数据
         function hasUnsavedDataInStep3() {
@@ -1046,7 +1095,7 @@
             }
             
             // 如果当前在步骤3且有未提交的数据，提示用户
-            if (currentStep === 3 && step !== 3 && hasUnsavedDataInStep3()) {
+            if (currentStep === 3 && step !== 3 && hasUnsavedDataInStep3() && !isViewMode) {
                 if (!confirm('确定离开这一步骤吗？您未提交的数据会被清空。')) {
                     return;
                 }
@@ -1115,6 +1164,11 @@
                 // 如果是编辑模式，移除高亮
                 if (currentStudentIndex >= 0) {
                     removeAllHighlights();
+                }
+                
+                // 如果是查看模式，应用颜色标记
+                if (isViewMode) {
+                    applyAnswerColors();
                 }
             }
             
@@ -1246,17 +1300,19 @@
             }
             
             // 添加选项事件监听
-            container.querySelectorAll('.option-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    if (isCorrectAnswer) {
-                        if (!isCorrectAnswersLocked) {
-                            handleCorrectAnswerClick.call(this);
+            if (!isViewMode) {
+                container.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        if (isCorrectAnswer) {
+                            if (!isCorrectAnswersLocked) {
+                                handleCorrectAnswerClick.call(this);
+                            }
+                        } else {
+                            handleStudentAnswerClick.call(this);
                         }
-                    } else {
-                        handleStudentAnswerClick.call(this);
-                    }
+                    });
                 });
-            });
+            }
             
             // 初始化答案数组
             if (isCorrectAnswer && correctAnswers.length === 0) {
@@ -1362,6 +1418,41 @@
                 
                 // 移动到下一个未作答选项
                 findNextUnansweredOption();
+            }
+        }
+        
+        // 应用答案颜色标记（只读模式）
+        function applyAnswerColors() {
+            if (currentStudentIndex < 0) return;
+            
+            const student = studentAnswersList[currentStudentIndex];
+            
+            for (let i = 0; i < examData.questionCount; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const studentValue = student.answers[i][j];
+                    const correctValue = correctAnswers[i][j];
+                    
+                    // 学生未填涂的选项不显示颜色
+                    if (studentValue === null) continue;
+                    
+                    const button = document.querySelector(`#student-question-${i+1} .option-btn[data-option="${j}"][data-value="${studentValue}"]`);
+                    if (!button) continue;
+                    
+                    // 如果教师设置的是空格，学生填涂的选项显示绿色
+                    if (correctValue === null) {
+                        button.classList.add('student-correct');
+                    } else {
+                        // 教师设置了具体答案，学生答案正确显示绿色，错误显示红色
+                        if (studentValue === correctValue) {
+                            button.classList.add('student-correct');
+                        } else {
+                            button.classList.add('student-incorrect');
+                        }
+                    }
+                    
+                    // 在只读模式下，锁定所有选项按钮
+                    button.classList.add('locked');
+                }
             }
         }
         
@@ -1502,7 +1593,7 @@
             
             if (currentStep === 2 && !isCorrectAnswersLocked) {
                 handleKeyDownForCorrect(e);
-            } else if (currentStep === 3) {
+            } else if (currentStep === 3 && !isViewMode) {
                 handleKeyDownForStudent(e);
             }
         }
@@ -2082,8 +2173,8 @@
                     <td>${student.score}分</td>
                     <td>
                         <div class="action-buttons">
-                            <button class="action-btn download-btn" data-index="${student.index}">
-                                <i class="fas fa-download"></i> 详情
+                            <button class="action-btn download-btn view-detail-btn" data-index="${student.index}">
+                                <i class="fas fa-eye"></i> 详情
                             </button>
                             <button class="action-btn edit-btn" data-index="${student.index}">
                                 <i class="fas fa-edit"></i> 修改
@@ -2528,6 +2619,34 @@
                 goToStep(4);
             });
             
+            // 步骤3：下载学生详情按钮
+            downloadStudentDetail.addEventListener('click', function() {
+                if (currentStudentIndex >= 0) {
+                    generateStudentScoreCSV(currentStudentIndex);
+                }
+            });
+            
+            // 步骤3：返回成绩分析按钮
+            backToResults.addEventListener('click', function() {
+                isViewMode = false;
+                currentStudentIndex = -1;
+                document.getElementById('step3').classList.remove('view-mode');
+                studentActions.style.display = 'flex';
+                viewActions.style.display = 'none';
+                
+                // 重置表单
+                document.getElementById('studentName').value = '';
+                document.getElementById('studentGrade').value = '';
+                document.getElementById('studentClass').value = '';
+                
+                // 重置UI
+                studentAnswerSheet.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.classList.remove('student-correct', 'student-incorrect', 'locked');
+                });
+                
+                goToStep(4);
+            });
+            
             // 步骤4：上一步按钮
             document.getElementById('backToStep3').addEventListener('click', function() {
                 goToStep(3);
@@ -2545,11 +2664,27 @@
                 
                 const studentIndex = parseInt(target.dataset.index);
                 
-                if (target.classList.contains('download-btn')) {
-                    // 下载学生得分详情
-                    generateStudentScoreCSV(studentIndex);
+                if (target.classList.contains('view-detail-btn')) {
+                    // 查看学生答案详情
+                    isViewMode = true;
+                    currentStudentIndex = studentIndex;
+                    const student = studentAnswersList[studentIndex];
+                    
+                    // 填充表单
+                    document.getElementById('studentName').value = student.name;
+                    document.getElementById('studentGrade').value = student.grade;
+                    document.getElementById('studentClass').value = student.class;
+                    
+                    // 切换到只读模式
+                    document.getElementById('step3').classList.add('view-mode');
+                    studentActions.style.display = 'none';
+                    viewActions.style.display = 'flex';
+                    
+                    // 进入步骤3
+                    goToStep(3);
                 } else if (target.classList.contains('edit-btn')) {
                     // 编辑学生答案
+                    isViewMode = false;
                     currentStudentIndex = studentIndex;
                     const student = studentAnswersList[studentIndex];
                     
