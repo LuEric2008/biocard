@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>教师版判断题答题卡系统</title>
+    <title>试卷批阅</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -713,8 +713,9 @@
 <body>
     <div class="container">
         <header>
-            <h1>教师版判断题答题卡系统</h1>
-            <p class="subtitle">通过四个简单步骤完成试卷设置、答案录入和成绩分析</p>
+            <h1>天一中学生物竞赛答题卡系统</h1>
+            <p class="subtitle">集试卷设置、答案录入和成绩分析的自动化在线批阅系统</p>
+            <p class="subtitle">©Eric Lu + Deepseek,2025</p>
         </header>
         
         <div class="wizard">
@@ -740,10 +741,10 @@
                 
                 <div class="import-export-buttons">
                     <button class="btn btn-warning" id="importData">
-                        <i class="fas fa-file-import"></i> 导入数据
+                        <i class="fas fa-file-import"></i> 导入备份
                     </button>
                     <button class="btn btn-success" id="exportData">
-                        <i class="fas fa-file-export"></i> 导出数据
+                        <i class="fas fa-file-export"></i> 导出备份
                     </button>
                 </div>
             </div>
@@ -788,14 +789,10 @@
                     </h2>
                     <p class="step-description">
                         请设置所有题目的正确答案。每道题包含4个独立选项，每个选项都需要选择正确（T）或错误（F）。
-                        按空格键可以跳过当前选项（设置为空格），空格选项表示学生只要填涂就正确。
+                        按空格键可以跳过当前选项（设置为空格），表示学生只要填涂就正确。
                     </p>
                     
-                    <div class="instructions">
-                        <div class="keyboard-shortcuts">
-                            <i class="fas fa-keyboard"></i> 空格键跳过当前选项
-                        </div>
-                        
+<!-- 删去了一个代码块 -->                        
                         <div class="keyboard-hint">
                             <i class="fas fa-keyboard"></i> 
                             <span>键盘操作提示：按 <kbd>T</kbd> 或 <kbd>F</kbd> 键输入答案，按 <kbd>Backspace</kbd> 删除上一个答案，按 <kbd>Space</kbd> 跳过当前选项（设置为空格）</span>
@@ -859,11 +856,7 @@
                         </div>
                     </div>
                     
-                    <div class="instructions">
-                        <div class="keyboard-shortcuts">
-                            <i class="fas fa-keyboard"></i> 空格键跳过当前选项
-                        </div>
-                        
+<!--del-->                        
                         <div class="keyboard-hint">
                             <i class="fas fa-keyboard"></i> 
                             <span>键盘操作提示：按 <kbd>T</kbd> 或 <kbd>F</kbd> 键输入答案，按 <kbd>Backspace</kbd> 删除上一个答案，按 <kbd>Space</kbd> 跳过当前选项</span>
@@ -2708,3 +2701,4 @@
     </script>
 </body>
 </html>
+
